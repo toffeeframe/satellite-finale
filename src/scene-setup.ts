@@ -43,16 +43,12 @@ export default class SceneSetup {
     this.renderer.setClearColor(0x000011, 1);
     document.getElementById("container")?.appendChild(this.renderer.domElement);
 
-    // Create Earth
-    // this.earth = this.createEarth();
-    // this.scene.add(this.earth);
-    this.earth = new THREE.Group();
-    this.loadEarthModel();
+    // Create Earth (always use procedural sphere)
+    this.earth = this.createEarth();
+    this.scene.add(this.earth);
     this.textureLoader = new THREE.TextureLoader();
 
     // Create satellite
-    // this.satellite = this.createSatellite();
-    // this.scene.add(this.satellite);
     this.satellite = new THREE.Group();
     this.loadSatelliteModel();
 
@@ -75,37 +71,6 @@ export default class SceneSetup {
     // Camera position
     this.camera.position.set(0, 0, 800);
     this.camera.lookAt(0, 0, 0);
-  }
-  async loadEarthModel() {
-    const loader = new GLTFLoader();
-    try {
-      // Set resource path for textures
-      loader.setResourcePath("../assets/models/earth/textures");
-
-      const earthData = await loader.loadAsync(
-        "../assets/models/earth/earth 2.gltf"
-      );
-      const earthModel = earthData.scene;
-
-      // Calculate proper scale based on Earth radius
-      const earthRadius =
-        this.simulation.EARTH_RADIUS * this.simulation.SCALE_FACTOR;
-      const boundingBox = new THREE.Box3().setFromObject(earthModel);
-      const size = boundingBox.getSize(new THREE.Vector3());
-      const maxDimension = Math.max(size.x, size.y, size.z);
-      const scaleFactor = earthRadius / (maxDimension / 2);
-
-      earthModel.scale.set(scaleFactor, scaleFactor, scaleFactor);
-      earthModel.rotation.x = Math.PI / 2;
-
-      this.earth.add(earthModel);
-      this.scene.add(this.earth);
-    } catch (error) {
-      console.error("Failed to load Earth model:", error);
-      // Fallback to primitive sphere
-      this.earth = this.createEarth();
-      this.scene.add(this.earth);
-    }
   }
 
   async loadSatelliteModel() {
@@ -139,34 +104,26 @@ export default class SceneSetup {
     // Load Earth textures
     const textureLoader = new THREE.TextureLoader();
 
-    // Load all Earth textures
+    // Use available textures
     const albedoTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth/earth_albedo.jpg"
+      "../assets/models/earth/textures/earth albedo.jpg"
     );
     const bumpTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth/earth_bump.jpg"
-    );
-    const specularTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth/earth_specular.jpg"
-    );
-    const oceanMaskTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth/earth_land_ocean_mask.png"
+      "../assets/models/earth/textures/earth bump.jpg"
     );
     const nightLightsTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth/earth_night_lights_modified.png"
+      "../assets/models/earth/textures/earth night_lights_modified.png"
     );
 
-    // Create complex Earth material
+    // Create Earth material (simplified)
     const earthMaterial = new THREE.MeshPhongMaterial({
       map: albedoTexture, // Main color texture
       bumpMap: bumpTexture, // Elevation/bump map
-      specularMap: specularTexture, // Specular highlights
       bumpScale: 0.05, // Adjust bump intensity
       shininess: 30, // Adjust shininess
       specular: 0x222222, // Specular color
       emissive: 0x000000, // Base emissive color
       emissiveMap: nightLightsTexture, // Night lights texture
-      alphaMap: oceanMaskTexture, // Land/ocean mask
     });
 
     const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
