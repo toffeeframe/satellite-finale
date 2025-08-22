@@ -9,14 +9,17 @@ export default class CameraController {
   // Camera control state
   mode: CameraMode = "orbit";
   orbitRadius: number = 800;
-  orbitPhi: number = Math.PI / 4; // Polar angle
+  orbitPhi: number = Math.PI * 0.25; // Polar angle
   orbitTheta: number = 0; // Azimuthal angle
+
+  // Satellite follow state
+  followSatelliteIndex: number = 0;
 
   // Free camera state
   freeCameraPosition: THREE.Vector3;
   freeCameraRotation: { x: number; y: number };
   keys: Record<string, boolean> = {};
-  cameraSpeed: number = 10;
+  cameraSpeed: number = 5;
 
   // Mouse state
   mouseDown: boolean = false;
@@ -33,11 +36,25 @@ export default class CameraController {
   setupCameraControls() {
     // Keyboard controls
     document.addEventListener("keydown", (e) => {
-      this.keys[e.key.toLowerCase()] = true;
+      const key = e.key.toLowerCase();
+      console.log(`Key down: ${e.key} (${key})`);
+      this.keys[key] = true;
+      
+      // Also handle key codes for better compatibility
+      if (e.code) {
+        this.keys[e.code.toLowerCase()] = true;
+      }
     });
 
     document.addEventListener("keyup", (e) => {
-      this.keys[e.key.toLowerCase()] = false;
+      const key = e.key.toLowerCase();
+      console.log(`Key up: ${e.key} (${key})`);
+      this.keys[key] = false;
+      
+      // Also handle key codes for better compatibility
+      if (e.code) {
+        this.keys[e.code.toLowerCase()] = false;
+      }
     });
 
     // Mouse controls
@@ -91,9 +108,22 @@ export default class CameraController {
 
   handleFreeCameraInput() {
     if (this.mode !== "free") return;
+    
+    // Debug: log key states occasionally
+    if (Object.keys(this.keys).some(key => this.keys[key])) {
+      const activeKeys = Object.keys(this.keys).filter(key => this.keys[key]);
+      console.log("Active keys:", activeKeys);
+      
+      // Check specific WASD keys
+      if (this.keys["w"] || this.keys["keyw"]) console.log("W key detected");
+      if (this.keys["a"] || this.keys["keya"]) console.log("A key detected");
+      if (this.keys["s"] || this.keys["keys"]) console.log("S key detected");
+      if (this.keys["d"] || this.keys["keyd"]) console.log("D key detected");
+    }
 
-    const rotationSpeed = 0.02;
-    const moveSpeed = this.cameraSpeed;
+    const rotationSpeed = 0.02,
+          moveSpeed = this.cameraSpeed,
+          halfPI = Math.PI * 0.5;
 
     // Rotation with Arrow Keys
     if (this.keys["arrowdown"]) this.freeCameraRotation.x -= rotationSpeed; // Look down
@@ -103,41 +133,46 @@ export default class CameraController {
 
     // Constrain vertical rotation
     this.freeCameraRotation.x = Math.max(
-      -Math.PI / 2,
-      Math.min(Math.PI / 2, this.freeCameraRotation.x)
+      -halfPI,
+      Math.min(halfPI, this.freeCameraRotation.x)
     );
+
+    const cosFreeCameraRotX = Math.cos(this.freeCameraRotation.x),
+          cosFreeCameraRotY = Math.cos(this.freeCameraRotation.y),
+          negSinFreeCameraRotY = -Math.sin(this.freeCameraRotation.y);
 
     // Calculate forward, right, and up vectors based on camera rotation
     const forward = new THREE.Vector3(
-      -Math.sin(this.freeCameraRotation.y) *
-        Math.cos(this.freeCameraRotation.x),
+      negSinFreeCameraRotY *
+        cosFreeCameraRotX,
       Math.sin(this.freeCameraRotation.x),
-      -Math.cos(this.freeCameraRotation.y) * Math.cos(this.freeCameraRotation.x)
+      -cosFreeCameraRotY * cosFreeCameraRotX
     );
 
     const right = new THREE.Vector3(
-      Math.cos(this.freeCameraRotation.y),
+      cosFreeCameraRotY,
       0,
-      -Math.sin(this.freeCameraRotation.y)
+      negSinFreeCameraRotY
     );
 
     const up = new THREE.Vector3(0, 1, 0);
 
-    // Movement with WASD
-    if (this.keys["w"])
-      this.freeCameraPosition.add(forward.clone().multiplyScalar(moveSpeed)); // Forward
-    if (this.keys["s"])
-      this.freeCameraPosition.add(forward.clone().multiplyScalar(-moveSpeed)); // Backward
-    if (this.keys["a"])
-      this.freeCameraPosition.add(right.clone().multiplyScalar(-moveSpeed)); // Left
-    if (this.keys["d"])
-      this.freeCameraPosition.add(right.clone().multiplyScalar(moveSpeed)); // Right
+    // Movement - check both key names and key codes
+    if (this.keys["w"] || this.keys["keyw"] || this.keys["s"] || this.keys["keys"]) {
+      let fwd = forward.clone();
+      this.freeCameraPosition.add(fwd.multiplyScalar(moveSpeed * ((this.keys["w"] || this.keys["keyw"]) ? 1 : -1)));
+    }
 
-    // Optional: Up/Down movement with r/f
-    if (this.keys["f"])
-      this.freeCameraPosition.add(up.clone().multiplyScalar(-moveSpeed)); // Down
-    if (this.keys["r"])
-      this.freeCameraPosition.add(up.clone().multiplyScalar(moveSpeed)); // Up
+    if (this.keys["d"] || this.keys["keyd"] || this.keys["a"] || this.keys["keya"]) {
+      let r = right.clone();
+      this.freeCameraPosition.add(r.multiplyScalar(moveSpeed * ((this.keys["d"] || this.keys["keyd"]) ? 1 : -1)));
+    }
+
+    // Optional up-down movement controls...
+    if (this.keys["r"] || this.keys["keyr"] || this.keys["f"] || this.keys["keyf"]) {
+      let u = up.clone();
+      this.freeCameraPosition.add(u.multiplyScalar(moveSpeed * ((this.keys["r"] || this.keys["keyr"]) ? 1 : -1)));
+    }
   }
 
   updateCameraPosition() {
@@ -146,32 +181,36 @@ export default class CameraController {
 
     switch (this.mode) {
       case "free":
+        const cosFreeCameraRotX = Math.cos(this.freeCameraRotation.x);
+
         this.simulation.camera.position.copy(this.freeCameraPosition);
 
         // Calculate look target based on rotation
         const lookTarget = new THREE.Vector3(
           this.freeCameraPosition.x -
             Math.sin(this.freeCameraRotation.y) *
-              Math.cos(this.freeCameraRotation.x),
+              cosFreeCameraRotX,
           this.freeCameraPosition.y + Math.sin(this.freeCameraRotation.x),
           this.freeCameraPosition.z -
             Math.cos(this.freeCameraRotation.y) *
-              Math.cos(this.freeCameraRotation.x)
+              cosFreeCameraRotX
         );
 
         this.simulation.camera.lookAt(lookTarget);
         break;
 
       case "orbit":
+        const sinOrbitPhi = Math.sin(this.orbitPhi);
+
         // Calculate camera position using spherical coordinates
         const x =
           this.orbitRadius *
-          Math.sin(this.orbitPhi) *
+          sinOrbitPhi *
           Math.cos(this.orbitTheta);
         const y = this.orbitRadius * Math.cos(this.orbitPhi);
         const z =
           this.orbitRadius *
-          Math.sin(this.orbitPhi) *
+          sinOrbitPhi *
           Math.sin(this.orbitTheta);
 
         this.simulation.camera.position.set(x, y, z);
@@ -179,10 +218,15 @@ export default class CameraController {
         break;
 
       case "follow":
-        const satPos = this.simulation.sceneSetup.satellite.position.clone();
-        const cameraPos = satPos.clone().add(new THREE.Vector3(0, 0, 100));
-        this.simulation.camera.position.copy(cameraPos);
-        this.simulation.camera.lookAt(satPos);
+        // Follow the selected satellite (default: first)
+        const satellites = this.simulation.sceneSetup.satellites;
+        const idx = Math.min(this.followSatelliteIndex, satellites.length - 1);
+        if (satellites.length > 0 && satellites[idx]) {
+          const satPos = satellites[idx].position.clone();
+          const cameraPos = satPos.clone().add(new THREE.Vector3(0, 0, 100));
+          this.simulation.camera.position.copy(cameraPos);
+          this.simulation.camera.lookAt(satPos);
+        }
         break;
     }
 
@@ -195,6 +239,7 @@ export default class CameraController {
   }
 
   setMode(mode: CameraMode) {
+    console.log(`Setting camera mode to: ${mode}`);
     this.mode = mode;
 
     // Update button styles
@@ -215,7 +260,7 @@ export default class CameraController {
       this.freeCameraRotation = { x: 0, y: 0 };
     } else if (mode === "orbit") {
       // Reset to default orbit position
-      this.orbitPhi = Math.PI / 4;
+      this.orbitPhi = Math.PI * 0.25;
       this.orbitTheta = 0;
       this.orbitRadius = 800;
     }

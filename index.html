@@ -16,6 +16,17 @@
 
       <div id="controls">
         <h3>Simulation Controls</h3>
+        <div id="satellite-controls">
+          <h4>Satellites</h4>
+          <div id="satellite-list"></div>
+          <button id="addSatelliteBtn">Add Satellite</button>
+          <div class="control-row">
+            <input type="checkbox" id="resetAfterAdd" />
+            <label for="resetAfterAdd">Reset fields after add</label>
+          </div>
+          <label for="followSelect">Follow Satellite:</label>
+          <select id="followSelect"></select>
+        </div>
 
         <div class="control-group">
           <label>Simulation Speed</label>
@@ -24,18 +35,26 @@
               type="range"
               id="simSpeed"
               min="0.1"
-              max="100"
-              step="0.1"
-              value="1"
+              max="50"
+              step="0.5"
+              value="5"
             />
             <input
               type="number"
               id="simSpeedVal"
               min="0.1"
-              max="5"
-              step="0.1"
-              value="1"
+              max="50"
+              step="0.5"
+              value="5"
             />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Satellite Sim Speed (x)</label>
+          <div class="control-row">
+            <input type="range" id="satSpeed" min="0.1" max="20" step="0.5" value="2" />
+            <input type="number" id="satSpeedVal" min="0.1" max="20" step="0.5" value="2" />
           </div>
         </div>
 
@@ -48,7 +67,7 @@
               min="200"
               max="50000"
               step="100"
-              value="400"
+              value="2000"
             />
             <input
               type="number"
@@ -56,7 +75,7 @@
               min="200"
               max="50000"
               step="100"
-              value="400"
+              value="2000"
             />
           </div>
         </div>
@@ -92,7 +111,7 @@
               min="1000"
               max="15000"
               step="100"
-              value="7800"
+              value="6900"
             />
             <input
               type="number"
@@ -100,8 +119,12 @@
               min="1000"
               max="15000"
               step="100"
-              value="7800"
+              value="6900"
             />
+          </div>
+          <div class="control-row">
+            <input type="checkbox" id="keepCircular" checked />
+            <label for="keepCircular">Keep Circular Orbit</label>
           </div>
         </div>
 
@@ -128,14 +151,98 @@
         </div>
 
         <div class="control-group">
-          <label>Preset Scenarios</label>
-          <div class="scenarios">
-            <button class="scenario-btn crash" id="crashScenario">Crash</button>
-            <button class="scenario-btn orbit" id="orbitScenario">Orbit</button>
-            <button class="scenario-btn escape" id="escapeScenario">
-              Escape
-            </button>
+          <label>Air Resistance</label>
+          <div class="control-row">
+            <input type="checkbox" id="airEnabled" checked />
+            <label for="airEnabled">Enabled</label>
           </div>
+          <div class="control-row">
+            <label>Drag Coefficient (Cd)</label>
+            <input
+              type="range"
+              id="dragCoeff"
+              min="0"
+              max="5"
+              step="0.01"
+              value="2.2"
+            />
+            <input
+              type="number"
+              id="dragCoeffVal"
+              min="0"
+              max="5"
+              step="0.01"
+              value="2.2"
+            />
+          </div>
+          <div class="control-row">
+            <label>Cross-sectional Area (m²)</label>
+            <input
+              type="range"
+              id="area"
+              min="0"
+              max="50"
+              step="0.1"
+              value="4"
+            />
+            <input
+              type="number"
+              id="areaVal"
+              min="0"
+              max="50"
+              step="0.1"
+              value="4"
+            />
+          </div>
+          <div class="control-row">
+            <label>Sea-level Air Density (kg/m³)</label>
+            <input
+              type="range"
+              id="rho0"
+              min="0"
+              max="2"
+              step="0.001"
+              value="1.225"
+            />
+            <input
+              type="number"
+              id="rho0Val"
+              min="0"
+              max="2"
+              step="0.001"
+              value="1.225"
+            />
+          </div>
+          <div class="control-row">
+            <label>Scale Height H (m)</label>
+            <input
+              type="range"
+              id="scaleH"
+              min="1000"
+              max="100000"
+              step="500"
+              value="8500"
+            />
+            <input
+              type="number"
+              id="scaleHVal"
+              min="1000"
+              max="100000"
+              step="500"
+              value="8500"
+            />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Preset Scenarios</label>
+                  <div class="scenarios">
+          <button class="scenario-btn crash" id="crashScenario">Crash</button>
+          <button class="scenario-btn orbit" id="orbitScenario">Orbit</button>
+          <button class="scenario-btn escape" id="escapeScenario">
+            Escape
+          </button>
+        </div>
         </div>
 
         <div class="control-group">
